@@ -463,7 +463,7 @@ export default function EgdReport(){
         cloResult:hpResult==="done"?"":"",
         disease:notionDisease.trim()||undefined,
         procedures:[...procSet],
-        quote:report,
+        quote:undefined,
         notes:notionNotes.trim()||undefined,
         bodyContent:report,
       };

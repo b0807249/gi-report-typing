@@ -90,6 +90,28 @@ function App() {
           >
             📋 Notion
           </a>
+          <a
+            href="https://www.notion.so/EGD-PES-1ea106028a14809e9dcdde8b3bd3b933"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "5px 12px",
+              borderRadius: 5,
+              border: "1px solid #1e2d4a",
+              background: "rgba(17, 26, 46, 0.9)",
+              color: "#e2e8f0",
+              fontSize: 11,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              backdropFilter: "blur(8px)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            🔬 EGD/PES
+          </a>
           <button
             onClick={handleLogout}
             style={{

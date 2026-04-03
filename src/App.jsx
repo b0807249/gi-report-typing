@@ -58,26 +58,55 @@ function App() {
   if (authed) {
     return (
       <div style={{ position: "relative" }}>
-        <button
-          onClick={handleLogout}
+        <div
           style={{
             position: "fixed",
             top: 14,
             right: 20,
             zIndex: 9999,
-            padding: "5px 12px",
-            borderRadius: 5,
-            border: "1px solid #1e2d4a",
-            background: "rgba(17, 26, 46, 0.9)",
-            color: "#64748b",
-            fontSize: 11,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            backdropFilter: "blur(8px)",
+            display: "flex",
+            gap: 8,
           }}
         >
-          Logout
-        </button>
+          <a
+            href="https://www.notion.so/1e4106028a148035afa6f5e401bb4d3b"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "5px 12px",
+              borderRadius: 5,
+              border: "1px solid #1e2d4a",
+              background: "rgba(17, 26, 46, 0.9)",
+              color: "#e2e8f0",
+              fontSize: 11,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              backdropFilter: "blur(8px)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            📋 Notion
+          </a>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "5px 12px",
+              borderRadius: 5,
+              border: "1px solid #1e2d4a",
+              background: "rgba(17, 26, 46, 0.9)",
+              color: "#64748b",
+              fontSize: 11,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            Logout
+          </button>
+        </div>
         <EgdReport />
       </div>
     );

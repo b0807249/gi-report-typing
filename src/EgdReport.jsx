@@ -146,6 +146,7 @@ const EVL_TYPE=["prophylactic","therapeutic"];
 
 const INDICATIONS=["tarry stool","hematemesis","melena","hematochezia","suspect UGIB","epigastric pain","dysphagia","anemia workup","coffee-ground vomitus","variceal surveillance","screening EGD","follow-up EGD","health examination","suspected GERD/PUD","foreign body ingestion","weight loss","abnormal imaging finding","PEG tube dislodgement","for ND insertion"];
 const PREMED="1. Gascon: 10 cc po 2. Hyoscine: 20 mg iv, 3. Xylocaine spray: 0.5 cc oral Informed Consent obtained.";
+const PREMED_HC="1. Gascon: 10 cc po  2. Hyoscine: 20 mg iv\nInformed Consent obtained.";
 const SUGGESTIONS=[
   {id:"sug_oral_ppi",label:"Oral PPI",text:"oral PPI"},
   {id:"sug_oral_ppi_sucra",label:"Oral PPI + Sucralfate",text:"oral PPI with +/- self-paid sucralfate 1PK TID"},
@@ -286,7 +287,7 @@ function DiagCard({entry,onRemove,onUpdate,dragHandlers,isDragOver}){
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
         <div style={{display:"flex",alignItems:"flex-start",gap:8,flex:1}}>
           <span style={{color:C.muted,fontSize:14,cursor:"grab",userSelect:"none",flexShrink:0,marginTop:1}}>⠿</span>
-          <div style={{flex:1,fontSize:12,color:C.text,lineHeight:1.5,fontWeight:500}}>* {buildDiagText(entry)}</div>
+          <div style={{flex:1,fontSize:12,color:C.text,lineHeight:1.5,fontWeight:500}}>- {buildDiagText(entry)}</div>
         </div>
         <button onClick={onRemove} style={{background:"none",border:"none",color:C.red,cursor:"pointer",fontSize:14,fontFamily:"inherit",padding:"0 4px",flexShrink:0}}>✕</button>
       </div>
@@ -368,6 +369,7 @@ const ORGAN_ORDER={esophagus:1,stomach:2,duodenum:3,other:4};
 const defaultParams=()=>({loc:"",locTo:"",forrest:"III",hill:"IV",kodsi:"II",candidaLoc:"none",evF:"F2",evColor:"Cb",evLoc:"Li",evRcs:"−",evlType:"prophylactic",evlCount:"5",ulcerDepth:"none",ulcerNum:"single",hemoclipCount:"1",bipolarW:"25",barrettType:"SSBE",barrettC:"1",barrettM:"1",strictureCm:"25",massCmFrom:"27",massCm:"33"});
 
 export default function EgdReport(){
+  const[mode,setMode]=useState("ward");// "ward" = 急病房, "hc" = 健檢
   const[indication,setIndication]=useState("");const[customInd,setCustomInd]=useState("");
   const[diagList,setDiagList]=useState([]);
   const[esoExtra,setEsoExtra]=useState("");const[stExtra,setStExtra]=useState("");
@@ -378,6 +380,12 @@ export default function EgdReport(){
   const[biopsy,setBiopsy]=useState("no");const[polyp,setPolyp]=useState("no");
   const[emrDone,setEmrDone]=useState("no");const[complication,setComplication]=useState("nil");
   const[copied,setCopied]=useState(false);
+  const[showNotionModal,setShowNotionModal]=useState(false);
+  const[chartNo,setChartNo]=useState("");
+  const[notionNotes,setNotionNotes]=useState("");
+  const[notionDisease,setNotionDisease]=useState("");
+  const[notionStatus,setNotionStatus]=useState("");// "saving","success","error"
+  const[notionError,setNotionError]=useState("");
   const[dragIdx,setDragIdx]=useState(null);const[dragOverIdx,setDragOverIdx]=useState(null);
   const nextId=useRef(0);
 
@@ -404,9 +412,11 @@ export default function EgdReport(){
   const de=()=>{setDragIdx(null);setDragOverIdx(null);};
 
   const report=useMemo(()=>{
-    const L=[];const ind=indication||customInd||"___";
-    L.push(`Indication: ${ind} Premedication:`);L.push(PREMED);
-    L.push(`Endoscope number:胃鏡 PC Number: Finding:`);
+    const L=[];const isHC=mode==="hc";
+    if(isHC)L.push("The procedure is performed under TIVA.");
+    const ind=isHC?"health examination":(indication||customInd||"___");
+    L.push(`Indication: ${ind} Premedication:`);L.push(isHC?PREMED_HC:PREMED);
+    L.push(`Endoscope number: Finding:`);
     let eF=[],sF=[],dF=[];const diagIdCount={};
     sorted.filter(e=>e.type==="catalog").forEach(entry=>{
       const item=findItem(entry.diagId);if(!item)return;
@@ -424,25 +434,60 @@ export default function EgdReport(){
     if(stNotExamined){L.push("Stomach: not examined.");}else{const mm={clean:"mucus lake is clean",bile:"mucus lake is bile-stained",blood:"much coffee ground content and hematin retained in fundus",food:"food residue is retained in stomach"};const mlText=mm[stMucusLake]||"";const sf=smartJoin(sF);let sT="";if(mlText&&sf){sT=mlText+(sf.startsWith(",")?sf:"\n"+sf);}else if(mlText){sT=mlText+".";}else if(sf){sT=sf.startsWith(",")?sf.slice(2).trim():sf;}else{sT="negative.";}if(stExtra)sT+="\n"+stExtra;L.push(`Stomach: ${sT}`);}
     const dm={neg2:"negative to 2nd portion.",neg3:"negative to 3rd portion.",not_examined:"not examined."};let dT=smartJoin(dF);if(!dT)dT=dm[duoNormal]||"negative to 2nd portion.";if(duoExtra)dT+="\n"+duoExtra;L.push(`Duodenum: ${dT}`);
     L.push("Diagnosis:");let hd=false;
-    sorted.forEach(e=>{if(e.type==="catalog"){L.push(`* ${buildDiagText(e)}`);hd=true;}else if(e.type==="free"&&e.text?.trim()){L.push(`* ${e.text.trim()}`);hd=true;}});
-    if(!hd)L.push("* ___");
+    sorted.forEach(e=>{if(e.type==="catalog"){L.push(`- ${buildDiagText(e)}`);hd=true;}else if(e.type==="free"&&e.text?.trim()){L.push(`- ${e.text.trim()}`);hd=true;}});
+    if(!hd)L.push("- ___");
     const hp=hpResult==="done"?"Rapid Hp urease test ( ): done":"Rapid Hp urease test ( ): nil";
     L.push(`Note: ${hp} Reason for incomplete EGD: ${incomplete} Suggestion of management:`);
     const sg=suggestions.map(id=>SUGGESTIONS.find(s=>s.id===id)).filter(Boolean);
-    if(sg.length||sugCustom){sg.forEach(s=>L.push(`* ${s.text}`));if(sugCustom)sugCustom.split("\n").filter(Boolean).forEach(s=>L.push(`* ${s}`));}else L.push("* ___");
+    if(sg.length||sugCustom){sg.forEach(s=>L.push(`- ${s.text}`));if(sugCustom)sugCustom.split("\n").filter(Boolean).forEach(s=>L.push(`- ${s}`));}else L.push("- ___");
     const b=biopsy==="yes"?"(v) yes ( ) no":"( ) yes (v) no";const po=polyp==="yes"?"(v) yes ( ) no":"( ) yes (v) no";const em=emrDone==="yes"?"(v) yes ( ) no":"( ) yes (v) no";const co=complication==="yes"?"(v) yes ( ) nil":"( ) yes (v) nil";
     L.push(`Pathological report (after EGD): (1)biopsy with removal: ${b} (2)polypectomy: ${po} (3)endoscopic mucosal resection: ${em} Complication after EGD: ${co}`);
     return L.join("\n");
-  },[indication,customInd,sorted,esoExtra,stExtra,stMucusLake,stNotExamined,duoExtra,duoNormal,hpResult,incomplete,suggestions,sugCustom,biopsy,polyp,emrDone,complication]);
+  },[mode,indication,customInd,sorted,esoExtra,stExtra,stMucusLake,stNotExamined,duoExtra,duoNormal,hpResult,incomplete,suggestions,sugCustom,biopsy,polyp,emrDone,complication]);
 
   const copy=()=>{navigator.clipboard.writeText(report).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});};
   const clear=()=>{setIndication("");setCustomInd("");setDiagList([]);setEsoExtra("");setStExtra("");setStMucusLake("");setStNotExamined(false);setDuoExtra("");setDuoNormal("neg2");setHpResult("nil");setIncomplete("nil");setSuggestions([]);setSugCustom("");setBiopsy("no");setPolyp("no");setEmrDone("no");setComplication("nil");};
+
+  const PROC_MAP={"epi_inj":"Bosmin","hemoclip":"Clip","bipolar":"Probe燒","heatprobe":"Probe燒","apc":"APC燒","evl":"EVL","histoacryl":"EIS"};
+  const saveToNotion=async()=>{
+    if(!chartNo.trim()){setNotionError("請輸入病歷號");return;}
+    setNotionStatus("saving");setNotionError("");
+    try{
+      // Extract procedures for multi-select
+      const procSet=new Set();
+      sorted.forEach(e=>{(e.procedures||[]).forEach(pid=>{if(PROC_MAP[pid])procSet.add(PROC_MAP[pid]);});});
+      const payload={
+        chartNo:chartNo.trim(),
+        biopsy:biopsy==="yes"?"Y":"N",
+        cloTest:hpResult==="done"?"Y":"N",
+        cloResult:hpResult==="done"?"":"",
+        disease:notionDisease.trim()||undefined,
+        procedures:[...procSet],
+        quote:report,
+        notes:notionNotes.trim()||undefined,
+        bodyContent:report,
+      };
+      const resp=await fetch("/api/notion-save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const data=await resp.json();
+      if(!resp.ok)throw new Error(data.error||"Failed to save");
+      setNotionStatus("success");
+      setTimeout(()=>{setShowNotionModal(false);setNotionStatus("");setChartNo("");setNotionNotes("");setNotionDisease("");},2000);
+    }catch(err){setNotionStatus("error");setNotionError(err.message);}
+  };
 
   return(
     <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'SF Mono','Fira Code','JetBrains Mono','Menlo',monospace",fontSize:13,display:"flex",flexDirection:"column"}}>
       <div style={{padding:"12px 20px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:C.panel,flexShrink:0}}>
         <div><div style={{fontSize:16,fontWeight:700}}>EGD Report Builder <span style={{fontSize:11,color:C.accent,fontWeight:400}}>v6</span></div><div style={{fontSize:11,color:C.muted,marginTop:1}}>Diagnosis-first · Forrest-specific · Complete phrase library</div></div>
-        <button onClick={clear} style={{padding:"7px 14px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⟲ Clear All</button>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <a href="https://www.notion.so/1e4106028a148035afa6f5e401bb4d3b" target="_blank" rel="noopener noreferrer" style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.text,fontSize:12,fontFamily:"inherit",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}>📋 Notion</a>
+          <a href="https://www.notion.so/EGD-PES-1ea106028a14809e9dcdde8b3bd3b933" target="_blank" rel="noopener noreferrer" style={{padding:"6px 12px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.text,fontSize:12,fontFamily:"inherit",textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}>🔬 EGD/PES</a>
+          <div style={{display:"flex",borderRadius:6,overflow:"hidden",border:`1px solid ${C.border}`}}>
+            <button onClick={()=>setMode("ward")} style={{padding:"6px 14px",fontSize:12,fontWeight:mode==="ward"?600:400,fontFamily:"inherit",background:mode==="ward"?C.accentSoft:"transparent",color:mode==="ward"?"#93c5fd":C.muted,border:"none",borderRight:`1px solid ${C.border}`,cursor:"pointer"}}>急病房</button>
+            <button onClick={()=>setMode("hc")} style={{padding:"6px 14px",fontSize:12,fontWeight:mode==="hc"?600:400,fontFamily:"inherit",background:mode==="hc"?C.greenSoft:"transparent",color:mode==="hc"?C.green:C.muted,border:"none",cursor:"pointer"}}>健檢</button>
+          </div>
+          <button onClick={clear} style={{padding:"7px 14px",borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>⟲ Clear All</button>
+        </div>
       </div>
       <div style={{display:"flex",flex:1,overflow:"hidden"}}>
         <div style={{flex:1,overflowY:"auto",padding:"14px 18px",borderRight:`1px solid ${C.border}`,maxHeight:"calc(100vh - 54px)"}}>
@@ -511,9 +556,38 @@ export default function EgdReport(){
               <pre style={{whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.7,color:C.text,wordBreak:"break-word",fontFamily:"inherit"}}>{report}</pre>
             </div>
             <button onClick={copy} style={{width:"100%",padding:"11px",borderRadius:6,border:"none",background:copied?C.green:C.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s"}}>{copied?"✓ Copied":"Copy Report"}</button>
+            <button onClick={()=>setShowNotionModal(true)} style={{width:"100%",padding:"11px",borderRadius:6,border:`1px solid ${C.border}`,background:C.panel,color:C.text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:8,transition:"all 0.2s"}}>📋 Save to Notion</button>
           </div>
         </div>
       </div>
+      {showNotionModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10000}} onClick={()=>{if(notionStatus!=="saving"){setShowNotionModal(false);setNotionStatus("");setNotionError("");}}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:C.panel,border:`1px solid ${C.border}`,borderRadius:12,padding:24,width:360,maxWidth:"90vw"}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.text,marginBottom:16}}>📋 Save to Notion</div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:4}}>病歷號 *</div>
+              <input value={chartNo} onChange={e=>setChartNo(e.target.value)} placeholder="e.g. 52526848" style={{...inputSt}} autoFocus/>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:4}}>疾病（選填）</div>
+              <textarea value={notionDisease} onChange={e=>setNotionDisease(e.target.value)} placeholder="e.g. 6BI03；之前食道癌被我做到胃鏡" style={{...inputSt,resize:"vertical",minHeight:40}}/>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:"uppercase",marginBottom:4}}>後記/臨床狀況（選填）</div>
+              <textarea value={notionNotes} onChange={e=>setNotionNotes(e.target.value)} placeholder="Additional clinical notes..." style={{...inputSt,resize:"vertical",minHeight:40}}/>
+            </div>
+            <div style={{fontSize:11,color:C.dim,marginBottom:12,padding:10,background:C.bg,borderRadius:6,border:`1px solid ${C.border}`}}>
+              <div style={{marginBottom:4}}><span style={{color:C.muted}}>Biopsy:</span> {biopsy==="yes"?"Y":"N"} &nbsp; <span style={{color:C.muted}}>CLO:</span> {hpResult==="done"?"Y":"N"}</div>
+              <div><span style={{color:C.muted}}>介入:</span> {[...new Set(sorted.flatMap(e=>(e.procedures||[]).map(p=>PROC_MAP[p]).filter(Boolean)))].join(", ")||"—"}</div>
+            </div>
+            {notionError&&<div style={{fontSize:12,color:C.red,marginBottom:10}}>{notionError}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setShowNotionModal(false);setNotionStatus("");setNotionError("");}} disabled={notionStatus==="saving"} style={{flex:1,padding:10,borderRadius:6,border:`1px solid ${C.border}`,background:"transparent",color:C.dim,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
+              <button onClick={saveToNotion} disabled={notionStatus==="saving"} style={{flex:1,padding:10,borderRadius:6,border:"none",background:notionStatus==="success"?C.green:C.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s"}}>{notionStatus==="saving"?"Saving...":notionStatus==="success"?"✓ Saved!":"Save"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

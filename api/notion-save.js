@@ -37,19 +37,19 @@ export default async function handler(req, res) {
       },
     };
 
-    // Biopsy (Status: Y/N)
+    // Biopsy (Select: Y/N)
     if (biopsy) {
-      properties["Biopsy"] = { status: { name: biopsy } };
+      properties["Biopsy"] = { select: { name: biopsy } };
     }
 
-    // CLO test (Status: Y/N)
+    // CLO test (Select: Y/N)
     if (cloTest) {
-      properties["CLO test"] = { status: { name: cloTest } };
+      properties["CLO test"] = { select: { name: cloTest } };
     }
 
-    // CLO結果 (Status: 陽/陰)
+    // CLO結果 (Select: 陽/陰)
     if (cloResult) {
-      properties["CLO結果"] = { status: { name: cloResult } };
+      properties["CLO結果"] = { select: { name: cloResult } };
     }
 
     // 疾病 (Rich text)

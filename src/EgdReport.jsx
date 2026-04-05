@@ -71,7 +71,7 @@ const DIAGNOSIS_CATALOG = {
     {id:"gu",label:"Gastric ulcer",isGU:true,
       diagTextFn:(p)=>{const n=p.ulcerNum==="multiple"?"Multiple gastric":"Gastric";const d=mkD(p);const dd=d?` ${d}`:"";const loc=mkLoc(p,"antrum");return `${n}${dd} ulcer${p.ulcerNum==="multiple"?"s":""}, ${loc}, Forrest ${p.forrest||"III"}`;},
       findingFn:(p,idx)=>{const loc=mkLoc(p,"antrum");const d=mkD(p);const f=p.forrest||"III";const n=p.ulcerNum==="multiple";if(n)return `Multiple ${d?d+" ":""}ulcers were noticed at ${loc}.`;const fn=FORREST_FINDING[f];return fn?fn(d?d+" ":"",loc,idx||0):`An ulcer was noticed at ${loc}.`;},
-      procedures:ALL_ULCER_PROCS,hasLocMap:"stomach",hasForrest:true,forrestDefault:"III",locDefault:"antrum beside pylorus",allowMultiple:true},
+      procedures:ALL_ULCER_PROCS,hasLocMap:"stomach",hasForrest:true,forrestDefault:"III",locDefault:"antrum",allowMultiple:true},
     {id:"hemorrhagic_gastritis",label:"Hemorrhagic gastritis",diagText:"Hemorrhagic gastritis",finding:"\nMarked prominence of the areae gastricae, with areas of erythema and subepithelial hemorrhage.",procedures:["biopsy_a"]},
     {id:"atrophic_gastritis",label:"Atrophic gastritis",hasKimuraParam:true,
       diagTextFn:(p)=>`Atrophic gastritis, Kimura-Takemoto ${p.kimura||"C-1"}`,

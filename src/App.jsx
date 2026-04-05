@@ -3,7 +3,7 @@ import EgdReport from "./EgdReport.jsx";
 
 // ─── Password config ─────────────────────────────────────────────
 // Change this or use VITE_APP_PASSWORD env variable in .env file
-const APP_PASSWORD = import.meta.env.VITE_APP_PASSWORD || "chimei2026";
+const APP_PASSWORD = import.meta.env.VITE_APP_PASSWORD || "jacky0724";
 
 // Session duration: 7 days (in milliseconds)
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000;
